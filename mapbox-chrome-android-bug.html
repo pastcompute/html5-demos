@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta http-equiv="cleartype" content="on">
+  <meta name="MobileOptimized" content="320">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.17.0/mapbox-gl.js'></script>
+  <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.17.0/mapbox-gl.css' rel='stylesheet'>
+  <script src='https://code.jquery.com/jquery-2.2.3.min.js'></script>
+  <script src='https://api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.0/turf.min.js'></script>
+  <style>
+    html, body, {
+      width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+    }
+    #main {
+      margin-bottom: 0.75em;
+      font-size: 0.7em;
+    }
+    .main-map {
+        width: 700px;
+        height: 480px;
+        margin: 4px;
+        padding: 0px;
+        border-color:black;
+        border-width: 4px;
+        border-style:solid;
+    }
+    .nav-map {
+        background-color:#eedddd;
+        height:128px;
+        width:128px;
+        margin: 4px;
+        padding: 0px;
+        border-color:black;
+        border-width: 4px;
+        border-style:solid;
+    }
+  </style>
+  <script>
+$( document ).ready(function() {
+
+  var LAYER_STYLES = {
+    gps0 : {
+      "id": "gps0Layer",
+      "source": "gpsPoint0",
+      "type": "circle",
+      "paint": {
+          "circle-radius": 5,
+          "circle-color": "#ff1111"
+      }
+    },
+    gpsTrail0 : {
+      "id": "gpsTrail0Layer",
+      "source": "gpsTrail0",
+      "type": "line",
+      "layout": { "visibility":"none"},
+      "paint": {
+          "line-opacity": 0.75,
+          "line-width": 2,
+          "line-color": "#ff0000"
+      }
+    }
+  };
+
+  console.log( "Document ready." );
+
+  var token;
+  $("#submit").click(function(e) {
+    e.preventDefault();
+    token = $("#token").val();
+    runDemo();
+  });
+
+  function runDemo() {
+    console.log( "runDemo.", token);
+    // Report if Internet is down and there is no cache of mapbox
+    if (typeof mapboxgl === "undefined") {
+      // FIXME: this would be a great place to try out 'offline first' / browser services to cache the mapbox locally...
+      alert("Unable to load mapbox API.");
+    } else {
+      // TODO: Get this from server using an API
+      mapboxgl.accessToken = token;
+    }
+    var map1, map2;
+    var START = [138.49,-34.8];
+    var BOUND = [START[0]+0.001, START[1]+0.001];
+    var FIT = new mapboxgl.LngLatBounds(START, BOUND);
+    var gpsPoint0, gpsTrail0;
+
+    gpsPoint0 = turf.point(START);
+    gpsTrail0 = turf.linestring([START, BOUND]);
+
+    function showLayer(map, id, visible) {
+      if (!map) { return; }
+      if (map.getLayer(id)) {
+        map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+      }
+    }
+    function applyTrail(map) {
+      map.addSource("gpsPoint0", { type: "geojson", data: gpsPoint0 });
+      map.addLayer(LAYER_STYLES.gps0);
+      map.addSource("gpsTrail0", { type: "geojson", data: gpsTrail0 });
+      map.addLayer(LAYER_STYLES.gpsTrail0, LAYER_STYLES.gps0.id);
+      showLayer(map, 'gps0Layer', true);
+      showLayer(map, 'gpsTrail0Layer', true);
+    }
+
+    map1 = new mapboxgl.Map({
+                container: "map1",
+                style: 'mapbox://styles/mapbox/satellite-v8',
+                zoom: 11,
+                center: START
+              });
+    map1.on('load', function () {
+      console.log( "map1 on_load()" );
+      if (true) {
+        // When the second map is enabled,
+        // it intermittently wont draw,
+        // sometimes you see it flash then revert back to the background colour
+        map2 = new mapboxgl.Map({
+                    container: "map2",
+                    style: 'mapbox://styles/mapbox/satellite-v8',
+                    center: START,
+                    zoom: 7,
+                    attributionControl: false
+                    // TODO: disable pan
+                  });
+        if (true) {
+          // As soon as you do anything, both blank out once you pan
+          map2.on('load', function () {
+            console.log( "map2 on_load()" );
+            setTimeout(function() {
+              console.log("Doing something causes a problem");
+              map1.fitBounds(FIT, { 'padding' : 16 , animate:false});
+              applyTrail(map1);
+            }, 2000);
+          });
+        }
+      } else {
+        applyTrail(map1);
+        alert("Pan the map to cause the bug: cause the image to dissappear");
+      }
+    });
+  }
+});
+  </script>
+</head>
+<body>
+  <div id="main" style="width:1024px;">
+    <h2>Test for Chrome Android rendering bug</h2>
+      <form action="" method="post">
+        <label>API Token:</label>
+        <input id="token" name="token" type="text" value="pk.____">
+        <input id="submit" type="submit" value="Run">
+      </form>
+    <div id="map2" class="nav-map" style="position:relative;float:right;"><!-- required --></div>
+    <div id="map1" class="main-map" style="clear:left;"><!-- required --></div>
+  </div>
+</body>
+</html>
