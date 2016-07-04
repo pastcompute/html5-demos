@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta http-equiv="cleartype" content="on">
+  <meta name="MobileOptimized" content="320">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.17.0/mapbox-gl.js'></script>
+  <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.17.0/mapbox-gl.css' rel='stylesheet'>
+  <script src='https://code.jquery.com/jquery-2.2.3.min.js'></script>
+  <script src='https://api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.0/turf.min.js'></script>
+  <style>
+    html, body, {
+      width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+    }
+    #main {
+      margin-bottom: 0.75em;
+      font-size: 0.7em;
+    }
+    .main-map {
+        width: 700px;
+        height: 480px;
+        margin: 4px;
+        padding: 0px;
+        border-color:black;
+        border-width: 4px;
+        border-style:solid;
+    }
+    .nav-map {
+        background-color:#eedddd;
+        height:128px;
+        width:128px;
+        margin: 4px;
+        padding: 0px;
+        border-color:black;
+        border-width: 4px;
+        border-style:solid;
+    }
+  </style>
+  <script>
+$( document ).ready(function() {
+
+  var LAYER_STYLES = {
+    gps0 : {
+      "id": "gps0Layer",
+      "source": "gpsPoint0",
+      "type": "circle",
+      "paint": {
+          "circle-radius": 5,
+          "circle-color": "#ff1111"
+      }
+    }
+  };
+
+  console.log( "Document ready." );
+
+  var START = [138.49,-34.8];
+  var BOUND = [START[0]+0.001, START[1]+0.001];
+  var FIT = new mapboxgl.LngLatBounds(START, BOUND);
+  var map1;
+  var token;
+  $("#submit").click(function(e) {
+    e.preventDefault();
+    token = $("#token").val();
+    runDemo();
+  });
+  $("#submit2").click(function(e) {
+    e.preventDefault();
+
+    var changePoint;
+    changePoint = turf.point(START);
+    changePoint.properties = {'veni':'vidi-vici'};
+
+    var ss = map1.getSource("gpsPoint0");
+    ss.setData(changePoint);    
+  });
+
+  function handleMarkerClick(ev) {
+    var features = map1.queryRenderedFeatures(ev.point, { layers: ['gps0Layer'] });
+    if (features.length) {
+      console.log("FEATURE: " + JSON.stringify(features[0]));
+      alert(JSON.stringify(features[0]));
+    } else {
+      alert("nothing found");
+    }
+  }
+
+  function runDemo() {
+    console.log( "runDemo.", token);
+    // Report if Internet is down and there is no cache of mapbox
+    if (typeof mapboxgl === "undefined") {
+      alert("Unable to load mapbox API.");
+    } else {
+      mapboxgl.accessToken = token;
+    }
+    var gpsPoint0;
+
+    gpsPoint0 = turf.point(START);
+    gpsPoint0.properties = {'hello':'world'};
+
+    function showLayer(map, id, visible) {
+      if (!map) { return; }
+      if (map.getLayer(id)) {
+        map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+      }
+    }
+    function applyTrail(map) {
+      map.addSource("gpsPoint0", { type: "geojson", data: gpsPoint0 });
+      map.addLayer(LAYER_STYLES.gps0);
+      showLayer(map, 'gps0Layer', true);
+    }
+
+    $('#map1').text("");
+    map1 = new mapboxgl.Map({
+                container: "map1",
+                style: 'mapbox://styles/mapbox/satellite-v8',
+                zoom: 11,
+                center: START
+              });
+    map1.on('load', function () {
+      console.log( "map1 on_load()" );
+      applyTrail(map1);
+      map1.on('click', handleMarkerClick);
+    });
+  }
+});
+  </script>
+</head>
+<body>
+  <div id="main" style="width:1024px;">
+    <h2>Test for Mapbox setData properties retrieval</h2>
+      <form action="" method="post">
+        <label>API Token:</label>
+        <input id="token" name="token" type="text" value="pk.____">
+        <input id="submit" type="submit" value="Run">
+        <input id="submit2" type="submit" value="Test">
+      </form>
+    <div id="map1" class="main-map" style="clear:left;">
+    Press the 'run' button; this text should disappear and be replaced with a map.
+    <br>
+    Click on the red marker to query the object Feature data. Note that properties is {hello:world}
+    <br>
+    Press the 'test' button, this creates a new feature and sets it to the markers layer using setData()
+    The new feature should have properties {veni:vidivici}
+    </div>
+  </div>
+</body>
+</html>
