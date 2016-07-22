@@ -8,8 +8,8 @@
   <meta name="HandheldFriendly" content="True">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.17.0/mapbox-gl.js'></script>
-  <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.17.0/mapbox-gl.css' rel='stylesheet'>
+  <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.20.1/mapbox-gl.js'></script>
+  <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.20.1/mapbox-gl.css' rel='stylesheet'>
   <script src='https://code.jquery.com/jquery-2.2.3.min.js'></script>
   <script src='https://api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.0/turf.min.js'></script>
   <style>
@@ -62,9 +62,17 @@ $( document ).ready(function() {
   var FIT = new mapboxgl.LngLatBounds(START, BOUND);
   var map1;
   var token;
+
+  if (window.localStorage) {
+    var token = localStorage.getItem('token');
+    if (typeof token !== 'undefined' && token !== null) { console.log('localStorage:token=' + token); $("#token").val(token); }
+  }
+
   $("#submit").click(function(e) {
     e.preventDefault();
     token = $("#token").val();
+    // Save the token into local storage
+    if (window.localStorage) { console.log('token->localStorage'); localStorage.setItem('token', token); }
     runDemo();
   });
   $("#submit2").click(function(e) {
@@ -73,9 +81,10 @@ $( document ).ready(function() {
     var changePoint;
     changePoint = turf.point(START);
     changePoint.properties = {'veni':'vidi-vici'};
+    alert(JSON.stringify(changePoint));
 
     var ss = map1.getSource("gpsPoint0");
-    ss.setData(changePoint);    
+    ss.setData(changePoint);
   });
 
   function handleMarkerClick(ev) {
@@ -90,6 +99,7 @@ $( document ).ready(function() {
 
   function runDemo() {
     console.log( "runDemo.", token);
+
     // Report if Internet is down and there is no cache of mapbox
     if (typeof mapboxgl === "undefined") {
       alert("Unable to load mapbox API.");
@@ -140,6 +150,7 @@ $( document ).ready(function() {
       </form>
     <div id="map1" class="main-map" style="clear:left;">
     Press the 'run' button; this text should disappear and be replaced with a map.
+    Bug: Sometimes, this stays white until the map is panned.
     <br>
     Click on the red marker to query the object Feature data. Note that properties is {hello:world}
     <br>
